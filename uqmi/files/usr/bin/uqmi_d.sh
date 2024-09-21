@@ -41,11 +41,11 @@ do
 # Check wwan connectivity
 	if [ -n "$pdh_4" ]
 	then
-		ipv4connected="$(uqmi -s -d "$device" --set-client-id wds,"$cid_4" --get-current-settings)"
+		ipv4connected="$(uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_4" --get-current-settings)"
 	fi
 	if [ -n "$pdh_6" ]
 	then
-		ipv6connected="$(uqmi -s -d "$device" --set-client-id wds,"$cid_6" --get-current-settings)"
+		ipv6connected="$(uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_6" --get-current-settings)"
 	fi
 
 	if [ "$ipv4connected" = '"Out of call"' ] || [ "$ipv6connected" = '"Out of call"' ]
@@ -57,12 +57,12 @@ do
 # IPv4
 		if [ -n "$pdh_4" ]
 		then
-			uqmi -s -d "$device" --set-client-id wds,"$cid_4" \
+			uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_4" \
 				--release-client-id wds
 
-			cid_4="$(uqmi -s -d "$device" --get-client-id wds)"
-			uqmi -s -d "$device" --set-client-id wds,"$cid_4" --set-ip-family ipv4
-			pdh_4="$(uqmi -s -d "$device" --set-client-id wds,"$cid_4" \
+			cid_4="$(uqmi -s -d "$device" -t 1000 --get-client-id wds)"
+			uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_4" --set-ip-family ipv4
+			pdh_4="$(uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_4" \
 				--start-network \
 				--profile $default_profile)"
 			if [ "$pdh_4" = '"Call failed"' ]
@@ -82,7 +82,7 @@ do
 			proto_close_data
 			proto_send_update "$interface"
 
-			json_load "$(uqmi -s -d "$device" --set-client-id wds,"$cid_4" --get-current-settings)"
+			json_load "$(uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_4" --get-current-settings)"
 			json_select ipv4
 			json_get_var ip_4 ip
 			json_get_var gateway_4 gateway
@@ -105,22 +105,22 @@ do
 # IPv6
 		if [ -n "$pdh_6" ]
 		then
-			uqmi -s -d "$device" --set-client-id wds,"$cid_6" \
+			uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_6" \
 				--release-client-id wds
 
-			cid_6="$(uqmi -s -d "$device" --get-client-id wds)"
-			uqmi -s -d "$device" --set-client-id wds,"$cid_6" --set-ip-family ipv6
+			cid_6="$(uqmi -s -d "$device" -t 1000 --get-client-id wds)"
+			uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_6" --set-ip-family ipv6
 			if [ -n "$pdh_4" ] && [ -n "$pdh_6" ]
 			then
-				pdh_6="$(uqmi -s -d "$device" --set-client-id wds,"$cid_6" \
+				pdh_6="$(uqmi -s -d "$device" -t 5000 --set-client-id wds,"$cid_6" \
 					--start-network)"
 			elif [ -n "$ipv6profile" ]
 			then
-				pdh_6="$(uqmi -s -d "$device" --set-client-id wds,"$cid_6" \
+				pdh_6="$(uqmi -s -d "$device" -t 5000 --set-client-id wds,"$cid_6" \
 					--start-network \
 					--profile "$ipv6profile")"
 			else
-				pdh_6="$(uqmi -s -d "$device" --set-client-id wds,"$cid_6" \
+				pdh_6="$(uqmi -s -d "$device" -t 5000 --set-client-id wds,"$cid_6" \
 					--start-network \
 					--profile "$default_profile")"
 			fi
@@ -141,7 +141,7 @@ do
 			proto_close_data
 			proto_send_update "$interface"
 
-			json_load "$(uqmi -s -d "$device" --set-client-id wds,"$cid_6" --get-current-settings)"
+			json_load "$(uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_6" --get-current-settings)"
 			json_select ipv6
 			json_get_var ip_6 ip
 			json_get_var gateway_6 gateway
@@ -176,10 +176,10 @@ do
 		logger -t uqmi_d "SMS sent to $Bnumber"
 		if [ -z "$smsc" ]
 		then
-			uqmi -d "$device" --send-message "$SMStext" \
+			uqmi -d "$device" -t 3000 --send-message "$SMStext" \
 							--send-message-target "$Bnumber"
 		else
-			uqmi -d "$device" --send-message "$SMStext" \
+			uqmi -d "$device" -t 3000 --send-message "$SMStext" \
 							--send-message-target "$Bnumber" \
 							--send-message-smsc "$smsc"
 		fi
@@ -191,10 +191,10 @@ do
 # Check received SMS
 	for storage in sim me
 	do
-		messageID="$(uqmi -d "$device" --list-messages --storage "$storage" | jsonfilter -e '@[0]')"
+		messageID="$(uqmi -d "$device" -t 3000 --list-messages --storage "$storage" | jsonfilter -e '@[0]')"
 		while [ -n "$messageID" ]
 		do
-			json_load "$(uqmi -s -d "$device" --get-message "$messageID" --storage "$storage" 2>/dev/null)"
+			json_load "$(uqmi -s -d "$device" -t 3000 --get-message "$messageID" --storage "$storage" 2>/dev/null)"
 			json_get_var smsc smsc
 			json_get_var sender sender
 			json_get_var timestamp timestamp
@@ -221,14 +221,14 @@ do
 			fi
 			logger -t uqmi_d "SMS received from $sender"
 			/usr/bin/uqmi_sms.sh "$receiveFolder/$sms_file" 2> /dev/null
-			uqmi -d "$device" --delete-message "$messageID" --storage "$storage"
+			uqmi -d "$device" -t 3000 --delete-message "$messageID" --storage "$storage"
 			sleep 1
-			messageID=$(uqmi -d "$device" --list-messages --storage "$storage"  | jsonfilter -e '@[0]')
+			messageID=$(uqmi -d "$device" -t 3000 --list-messages --storage "$storage"  | jsonfilter -e '@[0]')
 		done
 	done
 
 # LED trigger
-	rssi="$(uqmi -s -d "$device" --get-signal-info | jsonfilter -e '@["rssi"]')"
+	rssi="$(uqmi -s -d "$device" -t 1000 --get-signal-info | jsonfilter -e '@["rssi"]')"
 	/usr/bin/uqmi_led.sh "$rssi" 2> /dev/null
 	sleep 30
 done
