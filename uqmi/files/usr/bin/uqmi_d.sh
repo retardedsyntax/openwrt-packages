@@ -15,8 +15,8 @@
 # SMS folders
 receiveFolder=/var/sms/received
 sendFolder=/var/sms/send
-mkdir -p $receiveFolder
-mkdir -p $sendFolder
+mkdir -p "$receiveFolder"
+mkdir -p "$sendFolder"
 
 interface="$(uci show network | grep qmi | awk -F . '{print $2}')"
 device="$(uci get network.${interface}.device)"
@@ -64,11 +64,11 @@ do
 			uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_4" --set-ip-family ipv4
 			pdh_4="$(uqmi -s -d "$device" -t 1000 --set-client-id wds,"$cid_4" \
 				--start-network \
-				--profile $default_profile)"
+				--profile "$default_profile")"
 			if [ "$pdh_4" = '"Call failed"' ]
 			then
 				logger -t uqmi_d 'Unable to re-connect IPv4 - Interface restarted'
-				ifup $interface
+				ifup "$interface"
 				/etc/init.d/uqmi_d stop
 			else
 				logger -t uqmi_d 'IPv4 re-connected'
@@ -127,7 +127,7 @@ do
 			if [ "$pdh_6" = '"Call failed"' ]
 			then
 				logger -t uqmi_d 'Unable to re-connect IPv6 - Interface restarted'
-				ifup $interface
+				ifup "$interface"
 				/etc/init.d/uqmi_d stop
 			else
 				logger -t uqmi_d 'IPv6 re-connected'
@@ -168,7 +168,7 @@ do
 	fi
 
 # Send SMS
-	smsTOsend=$(ls $sendFolder -w 1 | sed -n '1p')
+	smsTOsend=$(ls "$sendFolder" -w 1 | sed -n '1p')
 	while [ -n "$smsTOsend" ]
 	do
 		Bnumber="$(sed -n '1p' $sendFolder/$smsTOsend)"
@@ -183,8 +183,8 @@ do
 							--send-message-target "$Bnumber" \
 							--send-message-smsc "$smsc"
 		fi
-		rm $sendFolder/$smsTOsend
-		smsTOsend=$(ls $sendFolder -w 1 | sed -n '1p')
+		rm "$sendFolder/$smsTOsend"
+		smsTOsend=$(ls "$sendFolder" -w 1 | sed -n '1p')
 		[ -n "$smsTOsend" ] && sleep 1
 	done
 
@@ -203,7 +203,7 @@ do
 			json_get_var concat_parts concat_parts
 			json_get_var text text
             json_get_var ucs2 ucs-2
-			timestamp="$(echo $timestamp | sed -e 's/-//g' | sed -e 's/://g' | sed -e 's/ /T/g')"
+			timestamp="$(echo "$timestamp" | sed -e 's/-//g' | sed -e 's/://g' | sed -e 's/ /T/g')"
 			if [ -n "$concat_ref" ]
 			then
 				sms_file="sms_${timestamp}_${concat_ref}_${concat_part}_${concat_parts}"
